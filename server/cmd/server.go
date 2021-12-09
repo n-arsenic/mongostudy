@@ -1,29 +1,24 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/n-arsenic/mongostudy/server/internal/router"
+	"github.com/n-arsenic/mongostudy/server/internal/storage"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/spf13/cobra"
 )
-
-type DBConfig struct {
-	Host     string `env:"MONGO_HOST,required"`
-	User     string `env:"MONGO_USER,required"`
-	Password string `env:"MONGO_PASSWORD,required"`
-	DBName   string `env:"MONGO_DB_NAME,required"`
-}
 
 type SrvConfig struct {
 	SrvHost string `env:"SERVER_HOST" envDefault:":80"`
 }
 
 type Config struct {
-	DBConfig
+	storage.DBConfig
 	SrvConfig
 }
 
@@ -43,7 +38,15 @@ func Execute() {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return http.ListenAndServe(config.SrvHost, router.New())
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			db, err := storage.NewMongoDB(ctx, config.DBConfig)
+			if err != nil {
+				return err
+			}
+			// wait quit , handle quit - close mongo
+			log.Printf("start server")
+			return http.ListenAndServe(config.SrvHost, router.NewSampleRouter(db))
 		},
 		SilenceErrors: true,
 	}

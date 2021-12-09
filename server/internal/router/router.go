@@ -1,26 +1,21 @@
 package router
 
-import "github.com/julienschmidt/httprouter"
-
-const (
-	ReadSamplePath   = "/sample"
-	CreateSamplePath = "/sample/new"
-	UpdateSamplePath = "/sample/update"
-	DeleteSamplePath = "/sample/delete"
-
-	SampleCategoryTree = "/sample/tree"
+import (
+	"github.com/julienschmidt/httprouter"
+	"github.com/n-arsenic/mongostudy/server/internal/storage"
 )
 
-func New() *httprouter.Router {
+const SamplePath = "/sample"
+
+func NewSampleRouter(db *storage.MongoDB) *httprouter.Router {
 	router := httprouter.New()
+	store := storage.NewSampleStore(db)
+	h := NewHandler(store)
 
-	router.GET(ReadSamplePath, handleReadSample)
-	router.GET(ReadSamplePath+":id", handleReadSample)
-	router.POST(CreateSamplePath, handleCreateSample)
-	router.PUT(UpdateSamplePath+":id", handleUpdateOrCreateSample)
-	router.PATCH(UpdateSamplePath+":id", handleUpdateSample)
-
-	router.GET(SampleCategoryTree, handleSampleCategoryTree)
+	router.GET(SamplePath, h.handleReadSample)
+	router.GET(SamplePath+":id", h.handleReadSample)
+	router.POST(SamplePath, h.handleCreateSample)
+	router.PUT(SamplePath, h.handleUpdateSample)
 
 	return router
 }
